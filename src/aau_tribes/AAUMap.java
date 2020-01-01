@@ -50,12 +50,14 @@ public class AAUMap {
         return false;
     }
     
-    public boolean addCastle(String owner, int latitude, int longitude) {
+    public String addCastle(String owner, int latitude, int longitude) {
         // TODO: check if castle doesn't overlap with other things
-        castles.add(new Castle(owner, latitude, longitude, castleCount++));
-        System.out.println(castles.get(castles.size() - 1).toString());
+        if (true) {
+            castles.add(new Castle(owner, latitude, longitude, castleCount++));
+            return "success";
+        }
         
-        return true;
+        return "fail";
     }
     
     public int upgradeCastle(int castleId) {
@@ -64,7 +66,7 @@ public class AAUMap {
                 return castle.upgradeCastle();
             }
         }
-        return 0;
+        return -1;
     }
     
     public boolean gatherResources(int resourceId, int amount) {

@@ -74,7 +74,7 @@ public class Aau_tribes {
                                 printWriter.println(aaumap.addCastle(jsonInput.getString("player"), jsonInput.getInt("latitude"), jsonInput.getInt("longitude")));
                                 break;
                             case "UpgradeCastle":
-                                printWriter.println(upgradeCastle(jsonInput));
+                                printWriter.println(aaumap.upgradeCastle(jsonInput.optInt("castleId")));
                                 break;
                             default:
                                 System.out.println("actionType undefined");
@@ -159,26 +159,23 @@ public class Aau_tribes {
     }
     
     private static String gatherResources(JSONObject input) {
+        JSONObject newResponse= new JSONObject();
         if (aaumap.gatherResources(input.getInt("resourceId"), input.getInt("resourceAmount"))) {
             Iterator<Player> iterator = players.iterator();
             while (iterator.hasNext()) {
                 Player player = iterator.next();
                 if (player.name.equals(input.getString("player"))) {
                     player.addResource(input.getString("resourceType"), input.getInt("resourceAmount"));
-                    return "This are your resources: Wood: " +
-                            player.wood + " Stone: " + player.stone + " Food: " + player.food;
+                    newResponse.put("player", input.getString("player"));
+                    newResponse.put("action", "ResourcesOverview");
+                    newResponse.put("wood", player.wood);
+                    newResponse.put("stone", player.stone);
+                    newResponse.put("food", player.food);
+                    return newResponse.toString() + "\n";
                 }
             }
         }
         return "Another Player already gathered this resources";
-    }
-    
-    private static String upgradeCastle(JSONObject input) {
-        int result = aaumap.upgradeCastle(input.optInt("castleId"));
-        if (result >= 0) {
-            return "upgraded castle to lvl: " + result;
-        }
-        return "Not enough resources to upgrade castle";
     }
     
     private static String printDebugCodes(String input, String playerName) {
