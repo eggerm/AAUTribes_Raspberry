@@ -5,6 +5,8 @@
  */
 package aau_tribes;
 
+import org.json.JSONObject;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -18,31 +20,35 @@ public class AAUMap {
     List<ResourceEvent> events;
     List<Castle> castles = Collections.synchronizedList(new ArrayList<>());
     int castleCount;
+    String eventNowhere;
 
     public AAUMap() {
         events = new ArrayList<>();
         //castles = new ArrayList<>();
         castleCount = 0;
         
-        events.add(new ResourceEvent("wood", 1, 80, 80));
-        events.add(new ResourceEvent("stone", 2, 50, 50));
-        events.add(new ResourceEvent("food", 3, 110, 110));
-        events.add(new ResourceEvent("wood", 4, 180, 180));
+        events.add(new ResourceEvent("wood", 1, 46.811471, 14.363499));
+        events.add(new ResourceEvent("stone", 2, 46.813471, 14.363499));
+        events.add(new ResourceEvent("food", 3, 46.815471, 14.363499));
+        events.add(new ResourceEvent("wood", 4, 46.817471, 14.363499));
+        JSONObject noWhereEvent = new JSONObject();
+        noWhereEvent.put("action", "Nowhere");
+        eventNowhere = noWhereEvent.toString();
     }
     
-    public String checkEvent(int latitude, int longitude) {
+    public MovementResponse checkEvent(double latitude, double longitude) {
         for (Castle castle : castles) {
-            if (castle.locationInRange(latitude, longitude) != null) {
-                return "Castle " + castle.locationInRange(latitude, longitude);
+            if (castle.isLocationInRange(latitude,longitude)) {
+                return new MovementResponse(castle.toEnterCastleJson(), castle.getId(), 1);
             }
         }
         for (ResourceEvent event : events) {
-            if (event.locationInRange(latitude, longitude) != null) {
-                return "Resource " + event.locationInRange(latitude, longitude);
+            if (event.isLocationInRange(latitude, longitude)) {
+                return new MovementResponse(event.toAvailableResourceJson(), event.getId(), 2);
             }
         }
         
-        return null;
+        return new MovementResponse(eventNowhere, 0, 0);
     }
     
     public boolean addEvent() {
@@ -50,23 +56,38 @@ public class AAUMap {
         return false;
     }
     
-    public String addCastle(String owner, int latitude, int longitude) {
+    public String addCastle(String owner, double latitude, double longitude) {
         // TODO: check if castle doesn't overlap with other things
         if (true) {
-            castles.add(new Castle(owner, latitude, longitude, castleCount++));
-            return "success";
+            Castle castle = new Castle(owner, latitude, longitude, castleCount++);
+            castles.add(castle);
+            JSONObject newResponse = new JSONObject();
+            newResponse.put("action","CastleBuilt");
+            newResponse.put("player", owner);
+            newResponse.put("latitude", latitude);
+            newResponse.put("longitude", longitude);
+            newResponse.put("success", true);
+            newResponse.put("castleId", castle.getId());
+            newResponse.put("wood", castle.getWood());
+            newResponse.put("stone", castle.getStone());
+            newResponse.put("food", castle.getFood());
+            newResponse.put("level", castle.getLvl());
+            return newResponse.toString();
         }
-        
-        return "fail";
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put("player", owner);
+        jsonObject.put("success", false);
+        return jsonObject.toString();
     }
     
-    public int upgradeCastle(int castleId) {
+    public String upgradeCastle(int castleId) {
         for(Castle castle: castles) {
             if (castle.id == castleId) {
-                return castle.upgradeCastle();
+                castle.upgradeCastle();
+                return castle.toEnterCastleJson();
             }
         }
-        return -1;
+        return "";
     }
     
     public boolean gatherResources(int resourceId, int amount) {
@@ -102,13 +123,13 @@ public class AAUMap {
     }
     public String printEvents() {
         String output = "EVENTS: \n";
-        for (ResourceEvent event: events) {
+        /*for (ResourceEvent event: events) {
             output += "Id:" + event.id +
                     ", Type: " + event.type +
                     ", Available Resources: " + event.amount + 
                     ", Range: X:" + event.xStart + " - " + event.xEnd +
                     ", Y:" + event.yStart + " - " + event.yEnd + "\n";
-        }
+        }*/
         return output;
     }
 }

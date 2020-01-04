@@ -5,6 +5,8 @@
  */
 package aau_tribes;
 
+import org.json.JSONObject;
+
 /**
  *
  * @author manuelegger
@@ -12,26 +14,26 @@ package aau_tribes;
 public class Castle {
     String owner;
     int id;
-    int xStart;
-    int xEnd;
-    int yStart;
-    int yEnd;
+    double latitude;
+    double longitude;
+    double enteringRange;
+    double spottingRange;
     int lvl;
     int wood;
     int stone;
     int food;
 
-    public Castle(String owner, int latitude, int longitude, int id) {
+    public Castle(String owner, double latitude, double longitude, int id) {
         this.owner = owner;
         this.id = id;
-        xStart = latitude + 10;
-        xEnd = latitude - 10;
-        yStart = longitude + 10;
-        yEnd = longitude - 10;
+        this.latitude = latitude;
+        this.longitude = longitude;
+        enteringRange = 10;
+        spottingRange = 20;
         lvl = 1;
-        wood = 0;
-        stone = 0;
-        food = 0;
+        wood = 100;
+        stone = 100;
+        food = 100;
     }
 
     public String getOwner() {
@@ -86,12 +88,23 @@ public class Castle {
                 System.out.println("Resource not available");
         }
     }
-    
-    public String locationInRange(int latitude, int longitude) {
-        if(latitude <= xStart && latitude >= xEnd && longitude <= yStart && longitude >= yEnd) {
-            return owner + " " + id;
-        }
-        return null;
+
+    public String toEnterCastleJson() {
+        JSONObject newResponse = new JSONObject();
+        newResponse.put("action", "CastleArrived");
+        newResponse.put("latitude", latitude);
+        newResponse.put("longitude", longitude);
+        newResponse.put("castleId", id);
+        newResponse.put("wood", wood);
+        newResponse.put("stone", stone);
+        newResponse.put("food", food);
+        newResponse.put("level", lvl);
+        System.out.println(newResponse.toString());
+        return newResponse.toString();
+    }
+
+    public boolean isLocationInRange(double latitude, double longitude) {
+        return CoordinateMath.distance(latitude, this.latitude, longitude, this.longitude) < enteringRange;
     }
     
     public int upgradeCastle() {
