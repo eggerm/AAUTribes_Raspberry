@@ -19,12 +19,33 @@ import java.util.regex.Pattern;
 
 import org.json.*;
 
+import com.amazonaws.regions.Regions;
+import com.amazonaws.services.lambda.AWSLambda;
+import com.amazonaws.services.lambda.AWSLambdaClientBuilder;
+import com.amazonaws.services.lambda.model.InvokeRequest;
+import com.amazonaws.services.lambda.model.InvokeResult;
+
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
+import com.amazonaws.auth.BasicAWSCredentials;
+
 /**
  * @author manuelegger
  */
 public class Aau_tribes {
     static List<Player> players = Collections.synchronizedList(new ArrayList<>());
     static AAUMap aaumap = new AAUMap();
+    static InvokeRequest req;
+    static InvokeResult lambdaResult;
+    static String accessKey = "";
+    static String secretAccessKey = "";
+    
+    static BasicAWSCredentials credentials = new BasicAWSCredentials(accessKey, secretAccessKey);
+    
+    static AWSLambdaClientBuilder builder = AWSLambdaClientBuilder.standard()
+            .withCredentials(new AWSStaticCredentialsProvider(credentials))
+            .withRegion(Regions.EU_CENTRAL_1);
+    
+    static AWSLambda client = builder.build();
 
     public static class PlayerConnectionThread extends Thread {
         private Socket playerSocket;
@@ -80,10 +101,30 @@ public class Aau_tribes {
                                 printWriter.println(gatherResources(jsonInput));
                                 break;
                             case "BuildCastle":
-                                printWriter.println(aaumap.addCastle(jsonInput.getString("player"), jsonInput.getDouble("latitude"), jsonInput.getDouble("longitude")));
+                                req = new InvokeRequest()
+                                        .withFunctionName("BuildCastle")
+                                        .withPayload(
+                                                aaumap.addCastle(jsonInput.getString("player"), 
+                                                        jsonInput.getDouble("latitude"), 
+                                                        jsonInput.getDouble("longitude"))
+                                        );
+                                lambdaResult = client.invoke(req);
+                                
+                                printWriter.println(lambdaResult.toString());
+
+                                        // printWriter.println(aaumap.addCastle(jsonInput.getString("player"), jsonInput.getDouble("latitude"), jsonInput.getDouble("longitude")));
                                 break;
                             case "UpgradeCastle":
-                                printWriter.println(aaumap.upgradeCastle(jsonInput.optInt("castleId")));
+                                req = new InvokeRequest()
+                                        .withFunctionName("UpgradeCastle")
+                                        .withPayload(
+                                            aaumap.upgradeCastle(jsonInput.optInt("castleId"))
+                                        );
+                                lambdaResult = client.invoke(req);
+                                
+                                printWriter.println(lambdaResult.toString());
+                                
+                                // printWriter.println(aaumap.upgradeCastle(jsonInput.optInt("castleId")));
                                 break;
                             case "DeliverResources":
                                 String response = deliverResources(jsonInput);

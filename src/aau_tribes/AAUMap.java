@@ -63,9 +63,9 @@ public class AAUMap {
             castles.add(castle);
             JSONObject newResponse = new JSONObject();
             newResponse.put("action","CastleBuilt");
-            newResponse.put("player", owner);
-            newResponse.put("latitude", latitude);
-            newResponse.put("longitude", longitude);
+            newResponse.put("playerName", owner);
+            newResponse.put("baseLatitude", latitude);
+            newResponse.put("baseLongitude", longitude);
             newResponse.put("success", true);
             newResponse.put("castleId", castle.getId());
             newResponse.put("wood", castle.getWood());

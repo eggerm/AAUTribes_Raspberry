@@ -91,6 +91,7 @@ public class Castle {
 
     public String toEnterCastleJson() {
         JSONObject newResponse = new JSONObject();
+        newResponse.put("player", owner);
         newResponse.put("action", "CastleArrived");
         newResponse.put("latitude", latitude);
         newResponse.put("longitude", longitude);
@@ -108,10 +109,11 @@ public class Castle {
     }
     
     public int upgradeCastle() {
-        if (wood > lvl*lvl*10 && stone > lvl*lvl*10 && food > lvl*lvl*10) {
-            wood -= lvl*lvl*10;
-            stone -= lvl*lvl*10;
-            food -= lvl*lvl*10;
+        // if (wood > lvl*lvl*10 && stone > lvl*lvl*10 && food > lvl*lvl*10) {
+        if (true) {
+            //wood -= lvl*lvl*10;
+            //stone -= lvl*lvl*10;
+            //food -= lvl*lvl*10;
             
             return ++lvl;
         }
