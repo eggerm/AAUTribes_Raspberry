@@ -38,6 +38,7 @@ public class Aau_tribes {
     static InvokeResult lambdaResult;
     static String accessKey = "";
     static String secretAccessKey = "";
+    static String intermediateResult;
     
     static BasicAWSCredentials credentials = new BasicAWSCredentials(accessKey, secretAccessKey);
     
@@ -98,7 +99,17 @@ public class Aau_tribes {
 
                                 break;
                             case "GatherResources":
-                                printWriter.println(gatherResources(jsonInput));
+                                intermediateResult = gatherResources(jsonInput);
+                                if(!intermediateResult.equals("")) {
+                                    req = new InvokeRequest()
+                                            .withFunctionName("GatherResources")
+                                            .withPayload(intermediateResult);
+                                    lambdaResult = client.invoke(req);
+
+                                    printWriter.println(lambdaResult.toString());
+                                } else {
+                                    printWriter.println("Another Player already gathered this resources");
+                                }
                                 break;
                             case "BuildCastle":
                                 req = new InvokeRequest()
@@ -115,11 +126,12 @@ public class Aau_tribes {
                                         // printWriter.println(aaumap.addCastle(jsonInput.getString("player"), jsonInput.getDouble("latitude"), jsonInput.getDouble("longitude")));
                                 break;
                             case "UpgradeCastle":
+                                System.out.println(new JSONObject().put("playerName", jsonInput.getString("player")).toString());
                                 req = new InvokeRequest()
                                         .withFunctionName("UpgradeCastle")
-                                        .withPayload(
-                                            aaumap.upgradeCastle(jsonInput.optInt("castleId"))
-                                        );
+                                        .withPayload(new JSONObject().put("playerName", jsonInput.getString("player")).toString());
+                                            //aaumap.upgradeCastle(jsonInput.optInt("castleId"))
+                                        //);
                                 lambdaResult = client.invoke(req);
                                 
                                 printWriter.println(lambdaResult.toString());
@@ -254,7 +266,7 @@ public class Aau_tribes {
     private static String gatherResources(JSONObject input) {
         JSONObject newResponse = new JSONObject();
         if (aaumap.gatherResources(input.getInt("resourceId"), input.getInt("resourceAmount"))) {
-            Iterator<Player> iterator = players.iterator();
+            /*Iterator<Player> iterator = players.iterator();
             while (iterator.hasNext()) {
                 Player player = iterator.next();
                 if (player.name.equals(input.getString("player"))) {
@@ -266,14 +278,23 @@ public class Aau_tribes {
                     newResponse.put("food", player.food);
                     return newResponse.toString();
                 }
-            }
+            }*/
+            
+            newResponse.put("playerName", input.getString("player"));
+            newResponse.put(input.getString("resourceType") + "Count", input.getInt("resourceAmount"));
+            System.out.println(newResponse.toString());
+            return newResponse.toString();
         }
-        return "Another Player already gathered this resources";
+        
+        // return "Another Player already gathered this resources";
+        return "";
     }
 
     private static String printDebugCodes(String input, String playerName) {
         String output = "";
-        if (input.equals("/printall")) {
+        if (input.equals("/generateUserData")) {
+            generateUserData();
+        } else if (input.equals("/printall")) {
             for (Player player : players) {
                 if (playerName.equals(player.getName())) {
                     output += "Player Name: " + playerName + "\n";
@@ -293,5 +314,102 @@ public class Aau_tribes {
             }
         }
         return output;
+    }
+    
+    private static void generateUserData() {
+        String[] types = {"wood", "stone", "food"};
+        JSONObject newResponse = new JSONObject();
+         
+        
+        for (int i = 0; i < 100; i++) {
+            newResponse = new JSONObject();
+            newResponse.put("playerName", "manuelhob");
+            newResponse.put(types[(int) (Math.random() * 3)] + "Count", (int) (Math.random() * 50 + 1));
+            
+            System.out.println("Call GatherResources with: \n" + newResponse.toString());
+
+            req = new InvokeRequest()
+                    .withFunctionName("GatherResources")
+                    .withPayload(newResponse.toString());
+            lambdaResult = client.invoke(req);
+            
+            System.out.println(lambdaResult.toString());
+            
+            if (i % 10 == 0) {
+                System.out.println("Call UpgradeCastle with: \n" + new JSONObject().put("playerName", "manuelhob").toString());
+                req = new InvokeRequest()
+                    .withFunctionName("UpgradeCastle")
+                    .withPayload(new JSONObject().put("playerName", "manuelhob").toString());
+                lambdaResult = client.invoke(req);
+
+                System.out.println(lambdaResult.toString());
+            }
+        }
+        
+        for (int i = 0; i < 50; i++) {
+            newResponse = new JSONObject();
+            newResponse.put("playerName", "alexander");
+            newResponse.put(types[(int) (Math.random() * 3)] + "Count", (int) (Math.random() * 40 + 10));
+
+            req = new InvokeRequest()
+                    .withFunctionName("GatherResources")
+                    .withPayload(newResponse.toString());
+            lambdaResult = client.invoke(req);
+            
+            System.out.println(lambdaResult.toString());
+            
+            if (i % 5 == 0) {
+                req = new InvokeRequest()
+                    .withFunctionName("UpgradeCastle")
+                    .withPayload(new JSONObject().put("playerName", "alexander").toString());
+                lambdaResult = client.invoke(req);
+
+                System.out.println(lambdaResult.toString());
+            }
+        }
+        
+        for (int i = 0; i < 200; i++) {
+            newResponse = new JSONObject();
+            newResponse.put("playerName", "hellmuth");
+            newResponse.put(types[(int) (Math.random() * 3)] + "Count", (int) (Math.random() * 25 + 1));
+
+            req = new InvokeRequest()
+                    .withFunctionName("GatherResources")
+                    .withPayload(newResponse.toString());
+            lambdaResult = client.invoke(req);
+            
+            System.out.println(lambdaResult.toString());
+            
+            if (i % 25 == 0) {
+                req = new InvokeRequest()
+                    .withFunctionName("UpgradeCastle")
+                    .withPayload(new JSONObject().put("playerName", "hellmuth").toString());
+                lambdaResult = client.invoke(req);
+
+                System.out.println(lambdaResult.toString());
+            }
+        }
+        
+        for (int i = 0; i < 80; i++) {
+            newResponse = new JSONObject();
+            newResponse.put("playerName", "manuellan");
+            newResponse.put(types[(int) (Math.random() * 3)] + "Count", (int) (Math.random() * 45 + 5));
+
+            req = new InvokeRequest()
+                    .withFunctionName("GatherResources")
+                    .withPayload(newResponse.toString());
+            lambdaResult = client.invoke(req);
+            
+            System.out.println(lambdaResult.toString());
+            
+            if (i % 12 == 0) {
+                req = new InvokeRequest()
+                    .withFunctionName("UpgradeCastle")
+                    .withPayload(new JSONObject().put("playerName", "manuellan").toString());
+                lambdaResult = client.invoke(req);
+
+                System.out.println(lambdaResult.toString());
+            }
+        }
     }
 }
