@@ -78,6 +78,7 @@ public class Aau_tribes {
                     }
                     System.out.println(jsonInput);
                     if (!playerName.equals("") || jsonInput.getString("action").equals("PlayerLogin")) {
+                        JSONObject resultJson;
                         switch (jsonInput.getString("action")) {
                             case "PlayerLogin":
                                 if (loginPlayer(jsonInput.getString("player"))) {
@@ -96,7 +97,7 @@ public class Aau_tribes {
                                     if (intermediateResult.startsWith("ERROR:")) {
                                         printWriter.println(createNewPlayerInfo(playerName));
                                     } else {
-                                        JSONObject resultJson = new JSONObject(intermediateResult);
+                                        resultJson = new JSONObject(intermediateResult);
                                         resultJson.put("action", "GetPlayerInformation");
                                         printWriter.println(resultJson.toString());
                                     }
@@ -136,8 +137,11 @@ public class Aau_tribes {
                                                 ).toString()
                                         );
                                 lambdaResult = client.invoke(req);
-
-                                printWriter.println(parsePayloadResult(lambdaResult));
+                                intermediateResult = parsePayloadResult(lambdaResult);
+                                resultJson = new JSONObject(intermediateResult);
+                                resultJson.put("action", "GetPlayerInformation");
+                                printWriter.println(resultJson.toString());
+                                printWriter.println(resultJson);
 
                                 // printWriter.println(aaumap.addCastle(jsonInput.getString("player"), jsonInput.getDouble("latitude"), jsonInput.getDouble("longitude")));
                                 break;
@@ -148,7 +152,11 @@ public class Aau_tribes {
                                         .withPayload(new JSONObject().put("playerName", jsonInput.getString("player")).toString());
                                 lambdaResult = client.invoke(req);
 
-                                printWriter.println(parsePayloadResult(lambdaResult));
+                                intermediateResult = parsePayloadResult(lambdaResult);
+                                resultJson = new JSONObject(intermediateResult);
+                                resultJson.put("action", "GetPlayerInformation");
+                                printWriter.println(resultJson.toString());
+                                printWriter.println(resultJson);
 
                                 // printWriter.println(aaumap.upgradeCastle(jsonInput.optInt("castleId")));
                                 break;
@@ -161,7 +169,11 @@ public class Aau_tribes {
                                             .withPayload(response);
                                     lambdaResult = client.invoke(req);
 
-                                    printWriter.println(parsePayloadResult(lambdaResult));
+                                    intermediateResult = parsePayloadResult(lambdaResult);
+                                    resultJson = new JSONObject(intermediateResult);
+                                    resultJson.put("action", "GetPlayerInformation");
+                                    printWriter.println(resultJson.toString());
+                                    printWriter.println(resultJson);
                                 } else {
                                     printWriter.println(createStatusMessage("Error", "Oops, something went wrong"));
                                 }
