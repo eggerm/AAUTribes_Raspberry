@@ -37,11 +37,9 @@ public class Aau_tribes {
     static AAUMap aaumap = new AAUMap();
     static InvokeRequest req;
     static InvokeResult lambdaResult;
-    static String accessKey = "";
-    static String secretAccessKey = "";
     static String intermediateResult;
     
-    static BasicAWSCredentials credentials = new BasicAWSCredentials(accessKey, secretAccessKey);
+    static BasicAWSCredentials credentials = new BasicAWSCredentials(Settings.accessKey, Settings.secretAccessKey);
     
     static AWSLambdaClientBuilder builder = AWSLambdaClientBuilder.standard()
             .withCredentials(new AWSStaticCredentialsProvider(credentials))
