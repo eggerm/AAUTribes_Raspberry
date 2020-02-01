@@ -37,8 +37,8 @@ public class Aau_tribes {
     static AAUMap aaumap = new AAUMap();
     static InvokeRequest req;
     static InvokeResult lambdaResult;
-    static String accessKey = "AKIA5HRHXTUL55UVKE27";
-    static String secretAccessKey = "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";
+    static String accessKey = "";
+    static String secretAccessKey = "";
     static String intermediateResult;
     
     static BasicAWSCredentials credentials = new BasicAWSCredentials(accessKey, secretAccessKey);
