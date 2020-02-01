@@ -38,13 +38,13 @@ public class Aau_tribes {
     static InvokeRequest req;
     static InvokeResult lambdaResult;
     static String intermediateResult;
-    
+
     static BasicAWSCredentials credentials = new BasicAWSCredentials(Settings.accessKey, Settings.secretAccessKey);
-    
+
     static AWSLambdaClientBuilder builder = AWSLambdaClientBuilder.standard()
             .withCredentials(new AWSStaticCredentialsProvider(credentials))
             .withRegion(Regions.EU_CENTRAL_1);
-    
+
     static AWSLambda client = builder.build();
 
     public static class PlayerConnectionThread extends Thread {
@@ -82,8 +82,24 @@ public class Aau_tribes {
                             case "PlayerLogin":
                                 if (loginPlayer(jsonInput.getString("player"))) {
                                     playerName = jsonInput.getString("player");
-                                    // TODO: print JSON response of lambda function "GetPlayerInformation"
-                                    printWriter.println(jsonInput);
+
+                                    JSONObject gatherZero = new JSONObject();
+                                    gatherZero.put("playerName", playerName);
+                                    gatherZero.put("woodCount", 0);
+
+                                    req = new InvokeRequest()
+                                            .withFunctionName("GatherResources")
+                                            .withPayload(gatherZero.toString());
+                                    lambdaResult = client.invoke(req);
+
+                                    intermediateResult = parsePayloadResult(lambdaResult);
+                                    if (intermediateResult.startsWith("ERROR:")) {
+                                        printWriter.println(createNewPlayerInfo(playerName));
+                                    } else {
+                                        JSONObject resultJson = new JSONObject(intermediateResult);
+                                        resultJson.put("action", "GetPlayerInformation");
+                                        printWriter.println(resultJson.toString());
+                                    }
                                 } else {
                                     printWriter.println("please enter valid name (longer than 3 characters and no spezial characters)");
                                 }
@@ -107,44 +123,33 @@ public class Aau_tribes {
                                 }
                                 break;
                             case "BuildCastle":
-                                /*intermediateResult = aaumap.addCastle(jsonInput.getString("player"), 
-                                    jsonInput.getDouble("latitude"), 
+                                /*intermediateResult = aaumap.addCastle(jsonInput.getString("player"),
+                                    jsonInput.getDouble("latitude"),
                                     jsonInput.getDouble("longitude"));*/
-                                
+
                                 req = new InvokeRequest()
                                         .withFunctionName("BuildCastle")
                                         .withPayload(createBuildCastleJSON(
                                                 jsonInput.getString("player"),
                                                 jsonInput.getDouble("latitude"),
                                                 jsonInput.getDouble("longitude")
-                                            ).toString()
+                                                ).toString()
                                         );
                                 lambdaResult = client.invoke(req);
-                                
-                                printWriter.println("Payload: " + new String (lambdaResult.getPayload().array()));
-                                
-                                if (lambdaResult.getFunctionError() == null) {
-                                    printWriter.println(createStatusMessage("Ok", "Castle build"));
-                                } else {
-                                    printWriter.println(createStatusMessage("Error", "Oops, something went wrong"));
-                                }
+
+                                printWriter.println(parsePayloadResult(lambdaResult));
+
                                 // printWriter.println(aaumap.addCastle(jsonInput.getString("player"), jsonInput.getDouble("latitude"), jsonInput.getDouble("longitude")));
                                 break;
                             case "UpgradeCastle":
                                 // NOTE: upgrade castle is handled in cloud, functions on raspberry are present but not used
                                 req = new InvokeRequest()
-                                    .withFunctionName("UpgradeCastle")
-                                    .withPayload(new JSONObject().put("playerName", jsonInput.getString("player")).toString());
-                                     //aaumap.upgradeCastle(jsonInput.optInt("castleId"))
-                                    //);
+                                        .withFunctionName("UpgradeCastle")
+                                        .withPayload(new JSONObject().put("playerName", jsonInput.getString("player")).toString());
                                 lambdaResult = client.invoke(req);
-                                
-                                // TODO: check in lambda payload if upgrade was successful and send result to smartphone
-                                
-                                printWriter.println("Payload: " + new String (lambdaResult.getPayload().array()));
-                                
-                                printWriter.println(lambdaResult.toString());
-                                
+
+                                printWriter.println(parsePayloadResult(lambdaResult));
+
                                 // printWriter.println(aaumap.upgradeCastle(jsonInput.optInt("castleId")));
                                 break;
                             case "DeliverResources":
@@ -155,17 +160,12 @@ public class Aau_tribes {
                                             .withFunctionName("GatherResources")
                                             .withPayload(response);
                                     lambdaResult = client.invoke(req);
-                                    
-                                    if (lambdaResult.getFunctionError() == null) {
-                                        // TODO: print JSON response of lambda function "GetPlayerInformation"
-                                        printWriter.println(createStatusMessage("Ok", "Resources Delivered"));
-                                    } else {
-                                        printWriter.println(createStatusMessage("Error", "Oops, something went wrong"));
-                                    }
-                                }
-                                
-                                break;
 
+                                    printWriter.println(parsePayloadResult(lambdaResult));
+                                } else {
+                                    printWriter.println(createStatusMessage("Error", "Oops, something went wrong"));
+                                }
+                                break;
                             default:
                                 System.out.println("actionType undefined");
                         }
@@ -212,9 +212,9 @@ public class Aau_tribes {
                 newResponse.put("woodCount", player.wood);
                 newResponse.put("stoneCount", player.stone);
                 newResponse.put("foodCount", player.food);
-                
+
                 player.clearResources();
-                
+
                 return newResponse.toString();
             }
         }
@@ -272,7 +272,7 @@ public class Aau_tribes {
     private static String gatherResources(JSONObject input) {
         JSONObject newResponse = new JSONObject();
         if (aaumap.gatherResources(input.getInt("resourceId"), input.getInt("resourceAmount"))) {
-            
+
             Iterator<Player> iterator = players.iterator();
             while (iterator.hasNext()) {
                 Player player = iterator.next();
@@ -286,13 +286,13 @@ public class Aau_tribes {
                     return newResponse.toString();
                 }
             }
-            
+
             // newResponse.put("playerName", input.getString("player"));
             // newResponse.put(input.getString("resourceType") + "Count", input.getInt("resourceAmount"));
             System.out.println(newResponse.toString());
             return newResponse.toString();
         }
-        
+
         // return "Another Player already gathered this resources";
         return "";
     }
@@ -322,56 +322,79 @@ public class Aau_tribes {
         }
         return output;
     }
-    
+
     private static JSONObject createStatusMessage(String status, String message) {
         JSONObject error = new JSONObject();
-        
+
         error.put("status", status);
         error.put("message", message);
-        
+
         return error;
     }
-    
+
     private static JSONObject createBuildCastleJSON(String playerName, double latitude, double longitude) {
         JSONObject build = new JSONObject();
-        
+
         build.put("playerName", playerName);
         build.put("baseLatitude", latitude);
         build.put("baseLongitude", longitude);
-        
+
         return build;
     }
-    
+
+    private static String parsePayloadResult(InvokeResult payload) {
+        String parsed = new String(payload.getPayload().array());
+
+        parsed = parsed.substring(1, parsed.length() - 1);
+        parsed = parsed.replaceAll("\\\\", "");
+
+        return parsed;
+    }
+
+    private static String createNewPlayerInfo(String playername) {
+        JSONObject info = new JSONObject();
+        info.put("action", "GetPlayerInformation");
+        info.put("playerName", playername);
+        info.put("baseLatitude", 1.5d);
+        info.put("baseLongitude", 1.5d);
+        info.put("baseSize", 0);
+        info.put("foodCount", 0);
+        info.put("woodCount", 0);
+        info.put("stoneCount", 0);
+
+        return info.toString();
+    }
+
     private static void generateUserData() {
         String[] types = {"wood", "stone", "food"};
         JSONObject newResponse = new JSONObject();
-         
-        
+
+
         for (int i = 0; i < 100; i++) {
             newResponse = new JSONObject();
             newResponse.put("playerName", "manuelhob");
             newResponse.put(types[(int) (Math.random() * 3)] + "Count", (int) (Math.random() * 50 + 1));
-            
+
             System.out.println("Call GatherResources with: \n" + newResponse.toString());
 
             req = new InvokeRequest()
                     .withFunctionName("GatherResources")
                     .withPayload(newResponse.toString());
             lambdaResult = client.invoke(req);
-            
+
             System.out.println(lambdaResult.toString());
-            
+
             if (i % 10 == 0) {
                 System.out.println("Call UpgradeCastle with: \n" + new JSONObject().put("playerName", "manuelhob").toString());
                 req = new InvokeRequest()
-                    .withFunctionName("UpgradeCastle")
-                    .withPayload(new JSONObject().put("playerName", "manuelhob").toString());
+                        .withFunctionName("UpgradeCastle")
+                        .withPayload(new JSONObject().put("playerName", "manuelhob").toString());
                 lambdaResult = client.invoke(req);
 
                 System.out.println(lambdaResult.toString());
             }
         }
-        
+
         for (int i = 0; i < 50; i++) {
             newResponse = new JSONObject();
             newResponse.put("playerName", "alexander");
@@ -381,19 +404,19 @@ public class Aau_tribes {
                     .withFunctionName("GatherResources")
                     .withPayload(newResponse.toString());
             lambdaResult = client.invoke(req);
-            
+
             System.out.println(lambdaResult.toString());
-            
+
             if (i % 5 == 0) {
                 req = new InvokeRequest()
-                    .withFunctionName("UpgradeCastle")
-                    .withPayload(new JSONObject().put("playerName", "alexander").toString());
+                        .withFunctionName("UpgradeCastle")
+                        .withPayload(new JSONObject().put("playerName", "alexander").toString());
                 lambdaResult = client.invoke(req);
 
                 System.out.println(lambdaResult.toString());
             }
         }
-        
+
         for (int i = 0; i < 200; i++) {
             newResponse = new JSONObject();
             newResponse.put("playerName", "hellmuth");
@@ -403,19 +426,19 @@ public class Aau_tribes {
                     .withFunctionName("GatherResources")
                     .withPayload(newResponse.toString());
             lambdaResult = client.invoke(req);
-            
+
             System.out.println(lambdaResult.toString());
-            
+
             if (i % 25 == 0) {
                 req = new InvokeRequest()
-                    .withFunctionName("UpgradeCastle")
-                    .withPayload(new JSONObject().put("playerName", "hellmuth").toString());
+                        .withFunctionName("UpgradeCastle")
+                        .withPayload(new JSONObject().put("playerName", "hellmuth").toString());
                 lambdaResult = client.invoke(req);
 
                 System.out.println(lambdaResult.toString());
             }
         }
-        
+
         for (int i = 0; i < 80; i++) {
             newResponse = new JSONObject();
             newResponse.put("playerName", "manuellan");
@@ -425,13 +448,13 @@ public class Aau_tribes {
                     .withFunctionName("GatherResources")
                     .withPayload(newResponse.toString());
             lambdaResult = client.invoke(req);
-            
+
             System.out.println(lambdaResult.toString());
-            
+
             if (i % 12 == 0) {
                 req = new InvokeRequest()
-                    .withFunctionName("UpgradeCastle")
-                    .withPayload(new JSONObject().put("playerName", "manuellan").toString());
+                        .withFunctionName("UpgradeCastle")
+                        .withPayload(new JSONObject().put("playerName", "manuellan").toString());
                 lambdaResult = client.invoke(req);
 
                 System.out.println(lambdaResult.toString());
