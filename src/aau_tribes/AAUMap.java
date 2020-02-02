@@ -30,6 +30,12 @@ public class AAUMap {
         events.add(new ResourceEvent("stone", 2, 46.813471, 14.363499));
         events.add(new ResourceEvent("food", 3, 46.815471, 14.363499));
         events.add(new ResourceEvent("wood", 4, 46.817471, 14.363499));
+        events.add(new ResourceEvent("wood", 5, 46.615941, 14.265195));
+        events.add(new ResourceEvent("food", 6, 46.615826, 14.264802));
+        events.add(new ResourceEvent("stone", 7, 46.616489, 14.264682));
+        events.add(new ResourceEvent("food", 8, 46.616498, 14.265104));
+        events.add(new ResourceEvent("wood", 9, 46.616297, 14.265925));
+        events.add(new ResourceEvent("stone", 10, 46.616984, 14.266555));
         JSONObject noWhereEvent = new JSONObject();
         noWhereEvent.put("action", "Nowhere");
         eventNowhere = noWhereEvent.toString();

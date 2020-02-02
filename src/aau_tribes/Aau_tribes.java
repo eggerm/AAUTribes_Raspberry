@@ -27,6 +27,7 @@ import com.amazonaws.services.lambda.model.InvokeResult;
 
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
+
 import java.util.Arrays;
 
 /**
@@ -100,11 +101,9 @@ public class Aau_tribes {
                                         resultJson = new JSONObject(intermediateResult);
                                         resultJson.put("action", "GetPlayerInformation");
                                         int castleLevel = resultJson.getInt("baseSize");
-                                        if(castleLevel > 0)
-                                        {
+                                        if (castleLevel > 0) {
                                             Castle castle = aaumap.getCastleByPlayerName(resultJson.getString("playerName"));
-                                            if(castle != null)
-                                            {
+                                            if (castle != null) {
                                                 resultJson.put("baseLatitude", castle.getLatitude());
                                                 resultJson.put("baseLongitude", castle.getLongitude());
                                                 resultJson.put("baseId", castle.getId());
@@ -128,7 +127,7 @@ public class Aau_tribes {
                                 break;
                             case "GatherResources":
                                 intermediateResult = gatherResources(jsonInput);
-                                if(!intermediateResult.equals("")) {
+                                if (!intermediateResult.equals("")) {
                                     printWriter.println(intermediateResult);
                                 } else {
                                     printWriter.println(createStatusMessage("Error", "Another Player already gathered this resources"));
@@ -151,6 +150,11 @@ public class Aau_tribes {
                                 intermediateResult = parsePayloadResult(lambdaResult);
                                 resultJson = new JSONObject(intermediateResult);
                                 resultJson.put("action", "GetPlayerInformation");
+                                aaumap.addCastle(jsonInput.getString("player"),
+                                        jsonInput.getDouble("latitude"),
+                                        jsonInput.getDouble("longitude"));
+                                Castle castle = aaumap.getCastleByPlayerName(jsonInput.getString("player"));
+                                resultJson.put("baseId", castle.getId());
                                 printWriter.println(resultJson.toString());
                                 printWriter.println(resultJson);
 
@@ -164,8 +168,7 @@ public class Aau_tribes {
                                 lambdaResult = client.invoke(req);
 
                                 intermediateResult = parsePayloadResult(lambdaResult);
-                                if(!intermediateResult.startsWith("ERROR"))
-                                {
+                                if (!intermediateResult.startsWith("ERROR")) {
                                     resultJson = new JSONObject(intermediateResult);
                                     resultJson.put("action", "GetPlayerInformation");
                                     printWriter.println(resultJson.toString());
@@ -176,8 +179,7 @@ public class Aau_tribes {
                                 break;
                             case "DeliverResources":
                                 String response = deliverResources(jsonInput);
-                                if(!response.equals(""))
-                                {
+                                if (!response.equals("")) {
                                     req = new InvokeRequest()
                                             .withFunctionName("GatherResources")
                                             .withPayload(response);
@@ -227,8 +229,7 @@ public class Aau_tribes {
         }
     }
 
-    private static void initMap()
-    {
+    private static void initMap() {
         req = new InvokeRequest()
                 .withFunctionName("GetPlayerLocations");
         lambdaResult = client.invoke(req);
@@ -240,12 +241,11 @@ public class Aau_tribes {
             String playerName = castleJson.getString("playerName");
             double longitude = castleJson.getDouble("baseLongitude");
             double latitude = castleJson.getDouble("baseLatitude");
-            aaumap.addCastle(playerName,latitude,longitude);
+            aaumap.addCastle(playerName, latitude, longitude);
         }
     }
 
-    private static String deliverResources(JSONObject input)
-    {
+    private static String deliverResources(JSONObject input) {
         String playerName = input.getString("player");
         Iterator<Player> iterator = players.iterator();
         while (iterator.hasNext()) {
