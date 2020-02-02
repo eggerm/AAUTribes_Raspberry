@@ -99,6 +99,17 @@ public class Aau_tribes {
                                     } else {
                                         resultJson = new JSONObject(intermediateResult);
                                         resultJson.put("action", "GetPlayerInformation");
+                                        int castleLevel = resultJson.getInt("baseSize");
+                                        if(castleLevel > 0)
+                                        {
+                                            Castle castle = aaumap.getCastleByPlayerName(resultJson.getString("playerName"));
+                                            if(castle != null)
+                                            {
+                                                resultJson.put("baseLatitude", castle.getLatitude());
+                                                resultJson.put("baseLongitude", castle.getLongitude());
+                                                resultJson.put("baseId", castle.getId());
+                                            }
+                                        }
                                         printWriter.println(resultJson.toString());
                                     }
                                 } else {
@@ -153,10 +164,13 @@ public class Aau_tribes {
                                 lambdaResult = client.invoke(req);
 
                                 intermediateResult = parsePayloadResult(lambdaResult);
-                                resultJson = new JSONObject(intermediateResult);
-                                resultJson.put("action", "GetPlayerInformation");
-                                printWriter.println(resultJson.toString());
-                                printWriter.println(resultJson);
+                                if(!intermediateResult.startsWith("ERROR"))
+                                {
+                                    resultJson = new JSONObject(intermediateResult);
+                                    resultJson.put("action", "GetPlayerInformation");
+                                    printWriter.println(resultJson.toString());
+                                }
+
 
                                 // printWriter.println(aaumap.upgradeCastle(jsonInput.optInt("castleId")));
                                 break;
@@ -173,7 +187,6 @@ public class Aau_tribes {
                                     resultJson = new JSONObject(intermediateResult);
                                     resultJson.put("action", "GetPlayerInformation");
                                     printWriter.println(resultJson.toString());
-                                    printWriter.println(resultJson);
                                 } else {
                                     printWriter.println(createStatusMessage("Error", "Oops, something went wrong"));
                                 }
@@ -201,6 +214,8 @@ public class Aau_tribes {
         //aaumap = new AAUMap();
 
         System.out.println("henlo");
+        // init aaumap by getting castles from the cloud
+        initMap();
 
         while (true) {
             try (ServerSocket serverSocket = new ServerSocket(6666)) {
@@ -209,6 +224,23 @@ public class Aau_tribes {
             } catch (Exception e) {
                 System.out.println(e);
             }
+        }
+    }
+
+    private static void initMap()
+    {
+        req = new InvokeRequest()
+                .withFunctionName("GetPlayerLocations");
+        lambdaResult = client.invoke(req);
+
+        intermediateResult = parsePayloadResult(lambdaResult);
+        JSONArray resultJson = new JSONArray(intermediateResult);
+        for (int i = 0; i < resultJson.length(); i++) {
+            JSONObject castleJson = resultJson.getJSONObject(i);
+            String playerName = castleJson.getString("playerName");
+            double longitude = castleJson.getDouble("baseLongitude");
+            double latitude = castleJson.getDouble("baseLatitude");
+            aaumap.addCastle(playerName,latitude,longitude);
         }
     }
 
@@ -231,40 +263,6 @@ public class Aau_tribes {
             }
         }
         return "";
-    }
-
-    private static String locationHandler(String locationResponse, String playerName) {
-        if (locationResponse == null) {
-            return "";
-        }
-        String[] locationInfo = locationResponse.split(" ");
-        JSONObject newResponse = new JSONObject();
-
-        if (locationInfo[0].equals("Resource")) {
-            newResponse.put("action", "AvailableResources");
-            newResponse.put("resourceId", locationInfo[2]);
-            newResponse.put("resourceType", locationInfo[1]);
-            newResponse.put("resourceAmount", locationInfo[3]);
-        }
-        if (locationInfo[0].equals("Castle")) {
-            newResponse.put("owner", locationInfo[1]);
-            newResponse.put("action", "CastleArrived");
-            newResponse.put("castleId", locationInfo[2]);
-
-            if (locationInfo[1].equals(playerName)) {
-                Iterator<Player> iterator = players.iterator();
-                while (iterator.hasNext()) {
-                    Player player = iterator.next();
-                    if (player.name.equals(playerName)) {
-                        aaumap.addRessourcesToCastle(Integer.parseInt(locationInfo[2]),
-                                player.getWood(), player.getStone(), player.getFood());
-                        player.clearResources();
-                    }
-                }
-            }
-        }
-
-        return newResponse.toString() + "\n";
     }
 
     private static boolean loginPlayer(String playerName) {
